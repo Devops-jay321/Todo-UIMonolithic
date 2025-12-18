@@ -1,0 +1,110 @@
+trigger:
+- master
+
+pool:
+  name: jay
+
+stages:
+  - stage: appBuild_lint
+    displayName: "Building the app after Lint"
+    jobs:
+    - job: lint
+      displayName: Lint
+      steps:
+      - task: PowerShell@2
+        continueOnError: true
+        displayName: Lint JavaScript(Biome)
+        inputs:
+          targetType: 'inline'
+          script: |
+            Invoke-WebRequest -Uri "https://github.com/biomejs/biome/releases/download/%40biomejs%2Fbiome%402.3.8/biome-win32-x64.exe" -OutFile "$(Agent.ToolsDirectory)/biome.exe"
+            $(Agent.ToolsDirectory)/biome.exe lint $(System.DefaultWorkingDirectory)/src/
+
+      - task: PowerShell@2
+        continueOnError: true
+        displayName: Lint CSS(Styelint)  
+        inputs:
+          targetType: 'inline'
+          script: |
+            npm install -g stylelint
+            npm install -g stylelint-config-standard        
+            stylelint $(System.DefaultWorkingDirectory)/src --config stylelint.config.mjs
+
+      - task: PowerShell@2
+        continueOnError: true
+        displayName: Lint YAML(yamllint)    
+        inputs:
+          targetType: 'inline'
+          script: |
+            pip install --user yamllint
+            yamllint $(System.DefaultWorkingDirectory)
+
+      - task: PowerShell@2
+        continueOnError: true
+        displayName: Lint Markdown(markdownlint)      
+        inputs:
+          targetType: 'inline'
+          script: |
+            npm install -g markdownlint-cli      
+            markdownlint $(System.DefaultWorkingDirectory)/
+
+    - job: appBuildjob
+      dependsOn: lint
+      displayName: "appBuild job"
+      steps:
+          - task: NodeTool@0
+            inputs:
+              versionSource: 'spec'
+              versionSpec: '16.x'
+
+          - task: Npm@1
+            displayName: "npm install task"
+            inputs:
+              command: 'install'
+              workingDir: '$(System.DefaultWorkingDirectory)'
+
+          - task: Npm@1
+            displayName: "npm run build taks"
+            inputs:
+              command: 'custom'
+              workingDir: '$(System.DefaultWorkingDirectory)'
+              customCommand: 'run build'
+
+          - task: PublishBuildArtifacts@1
+            displayName: "publish build task"
+            inputs:
+              PathtoPublish: '$(System.DefaultWorkingDirectory)/build'
+              ArtifactName: 'appArtifacts'
+              publishLocation: 'Container'
+
+
+
+  - stage: Deploy
+    displayName: "Deploy to VM"
+    jobs:
+      - job: DeployJob
+        displayName: "Deploy app to Azure VM"
+        steps:
+          # 1. Download artifacts
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'appArtifacts'
+              downloadPath: '$(Pipeline.Workspace)'
+
+          # 2. Copy artifact to VM
+          - task: CopyFilesOverSSH@0
+            inputs:
+              sshEndpoint: 'frontend-svc'   # ADO me banao SSH Service Connection
+              sourceFolder: '$(Pipeline.Workspace)/appArtifacts'
+              contents: '**'
+              targetFolder: '/var/www/html/'   # Static site ke liye Nginx/Apache ka root
+
+          # 3. Restart web server (Nginx)
+          - task: SSH@0
+            inputs:
+              sshEndpoint: 'frontend-svc'
+              runOptions: 'commands'
+              commands: |
+                sudo systemctl restart nginx
