@@ -85,7 +85,7 @@ stages:
     - deployment: deploytovm
       environment: 
         name: todovmss
-        resourceType: VirtualMachineScaleSet
+        resourceType: VirtualMachine
       strategy:
         runOnce:
           deploy:
