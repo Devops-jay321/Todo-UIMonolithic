@@ -83,7 +83,9 @@ stages:
     displayName: "Deploy to VM"
     jobs:
     - deployment: deploytovm
-      environment: 'todovmss'
+      environment: 
+        name: todovmss
+        resourceType: VirtualMachineScaleSet
       strategy:
         runOnce:
           deploy:
