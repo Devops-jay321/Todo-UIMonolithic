@@ -83,7 +83,7 @@ stages:
     displayName: "Deploy to VM"
     jobs:
     - deployment: deploytovm
-      environment: todovmss
+      environment: 'todovmss'
       strategy:
         runOnce:
           deploy:
