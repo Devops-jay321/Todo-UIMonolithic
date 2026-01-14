@@ -92,10 +92,6 @@ stages:
             steps:
             - task: DownloadPipelineArtifact@2
               inputs:
-                buildType: 'specific'
-                project: '635a45eb-53d4-4563-92ce-e0f3542d6f4f'
-                definition: '20'
-                buildVersionToDownload: 'specific'
-                pipelineId: '184'
+                buildType: 'current'
                 artifactName: 'appArtifacts'
                 targetPath: '/var/www/html'
