@@ -4,7 +4,7 @@ import { Button, TextField, Container, Typography, Grid, Card, CardContent, Icon
 import { Delete } from '@mui/icons-material';
 import { Box } from '@mui/material';
 
-const API_BASE_URL = 'http://todoapp.jaydeep.shop:80/api';
+const API_BASE_URL = 'http://20.198.1.95:8000/api';
 
 const backgroundImage = process.env.PUBLIC_URL + '/background.jpg';
 
